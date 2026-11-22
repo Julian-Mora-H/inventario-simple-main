@@ -24,13 +24,14 @@ pipeline {
         checkout scm
       }
     }
-    stage('Diagnóstico') {
-      steps {
-        bat(returnStatus: true, script: 'where docker')
-        bat(returnStatus: true, script: 'docker version')
-        bat(returnStatus: true, script: 'where node')
-      }
+  stage('Diagnóstico') {
+    steps {
+      bat(returnStatus: true, script: 'echo %PATH%')
+      bat(returnStatus: true, script: 'dir "C:\\Program Files\\Docker\\Docker\\resources\\bin\\docker.exe"')
+      bat(returnStatus: true, script: 'where docker')
+      bat(returnStatus: true, script: 'docker version')
     }
+  }
     stage('Preparar .env') {
       steps {
         // Credencial tipo "Secret text" con ID: inventario-db-password
@@ -53,17 +54,22 @@ pipeline {
       }
     }
 
-    stage('Prueba automatizada') {
-      steps {
-        bat 'node --test tests/inventario.test.mjs'
-      }
-    }
+  stage('Prueba automatizada') {
+  steps {
+    bat '''
+      docker rm -f inventario-test 2>nul
+      docker create --name inventario-test --network inventario-ci_default -e INVENTARIO_URL=http://frontend:8080 -w / node:24-alpine node --test /tests/inventario.test.mjs
+      docker cp tests inventario-test:/tests
+      docker start -a inventario-test
+    '''
   }
+}
 
   post {
     always {
       // Diagnóstico y limpieza: no deben hacer fallar el build
       bat(returnStatus: true, script: 'docker compose logs --no-color')
+      bat(returnStatus: true, script: 'docker rm -f inventario-test')
       bat(returnStatus: true, script: 'docker compose down -v')
       bat(returnStatus: true, script: 'if exist .env del .env')
     }
