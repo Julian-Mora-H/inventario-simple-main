@@ -8,30 +8,33 @@ pipeline {
   }
 
   environment {
-    // Nombre del proyecto Compose: aísla los contenedores del pipeline
+    // Nombre del proyecto Compose: aísla los contenedores y la red del pipeline
     COMPOSE_PROJECT_NAME = 'inventario-ci'
-    // Puerto publicado del frontend (compose.yaml lo lee con ${FRONTEND_PORT:-8080})
+    // Puerto publicado del frontend en el host (compose.yaml lee ${FRONTEND_PORT:-8080})
     FRONTEND_PORT        = '8082'
-    // La prueba automatizada entra por el frontend; debe coincidir con FRONTEND_PORT
-    INVENTARIO_URL       = 'http://127.0.0.1:8082'
-
-    PATH                 = "C:\\Program Files\\Docker\\Docker\\resources\\bin;C:\\Program Files\\nodejs;${env.PATH}"
+    // Cliente de Docker Desktop visible para la cuenta LocalSystem
+    PATH                 = "C:\\Program Files\\Docker\\Docker\\resources\\bin;${env.PATH}"
+    // Si 'docker version' muestra Client pero no Server, descomenta esta línea:
+    // DOCKER_HOST       = 'npipe:////./pipe/dockerDesktopLinuxEngine'
   }
-  
+
   stages {
     stage('Checkout') {
       steps {
         checkout scm
       }
     }
-  stage('Diagnóstico') {
-    steps {
-      bat(returnStatus: true, script: 'echo %PATH%')
-      bat(returnStatus: true, script: 'dir "C:\\Program Files\\Docker\\Docker\\resources\\bin\\docker.exe"')
-      bat(returnStatus: true, script: 'where docker')
-      bat(returnStatus: true, script: 'docker version')
+
+    stage('Diagnóstico') {
+      steps {
+        // returnStatus: true => se ejecutan todos los comandos aunque alguno falle
+        bat(returnStatus: true, script: 'echo %PATH%')
+        bat(returnStatus: true, script: 'dir "C:\\Program Files\\Docker\\Docker\\resources\\bin\\docker.exe"')
+        bat(returnStatus: true, script: 'where docker')
+        bat(returnStatus: true, script: 'docker version')
+      }
     }
-  }
+
     stage('Preparar .env') {
       steps {
         // Credencial tipo "Secret text" con ID: inventario-db-password
@@ -54,16 +57,19 @@ pipeline {
       }
     }
 
-  stage('Prueba automatizada') {
-  steps {
-    bat '''
-      docker rm -f inventario-test 2>nul
-      docker create --name inventario-test --network inventario-ci_default -e INVENTARIO_URL=http://frontend:8080 -w / node:24-alpine node --test /tests/inventario.test.mjs
-      docker cp tests inventario-test:/tests
-      docker start -a inventario-test
-    '''
+    stage('Prueba automatizada') {
+      steps {
+        // La prueba corre en un contenedor Node 24 dentro de la red de Compose,
+        // así no hace falta Node.js instalado en el equipo.
+        bat '''
+          docker rm -f inventario-test 2>nul
+          docker create --name inventario-test --network inventario-ci_default -e INVENTARIO_URL=http://frontend:8080 -w / node:24-alpine node --test /tests/inventario.test.mjs
+          docker cp tests inventario-test:/tests
+          docker start -a inventario-test
+        '''
+      }
+    }
   }
-}
 
   post {
     always {
@@ -77,7 +83,7 @@ pipeline {
       echo 'Pipeline completado: la prueba de integración pasó.'
     }
     failure {
-      echo 'Pipeline fallido: revisa los logs de docker compose arriba.'
+      echo 'Pipeline fallido: revisa los logs arriba.'
     }
   }
 }
