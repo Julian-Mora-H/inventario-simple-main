@@ -14,15 +14,23 @@ pipeline {
     FRONTEND_PORT        = '8082'
     // La prueba automatizada entra por el frontend; debe coincidir con FRONTEND_PORT
     INVENTARIO_URL       = 'http://127.0.0.1:8082'
-  }
 
+    PATH                 = "C:\\Program Files\\Docker\\Docker\\resources\\bin;C:\\Program Files\\nodejs;${env.PATH}"
+  }
+  
   stages {
     stage('Checkout') {
       steps {
         checkout scm
       }
     }
-
+    stage('Diagnóstico') {
+      steps {
+        bat(returnStatus: true, script: 'where docker')
+        bat(returnStatus: true, script: 'docker version')
+        bat(returnStatus: true, script: 'where node')
+      }
+    }
     stage('Preparar .env') {
       steps {
         // Credencial tipo "Secret text" con ID: inventario-db-password
