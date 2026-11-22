@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Inventario Simple</title>
+  <link rel="icon" href="/inventario.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="/styles.css">
+  <script type="module" src="/inventario.js"></script>
+</head>
+<body>
+  <main>
+    <header class="encabezado">
+      <p class="etiqueta">Inventario de productos</p>
+      <h1>Inventario Simple</h1>
+      <p>Registra productos, ajusta las unidades y retira los artículos que ya no manejas.</p>
+    </header>
+
+    <section class="panel" aria-labelledby="titulo-formulario">
+      <h2 id="titulo-formulario">Registrar producto</h2>
+      <form id="formulario">
+        <label>Producto <input id="nombre" name="nombre" required maxlength="80" placeholder="Ej. Cuaderno" autocomplete="off"></label>
+        <label>Unidades <input id="cantidad" name="cantidad" type="number" required min="0" max="999999" step="1" value="1"></label>
+        <button id="guardar" type="submit" disabled>Guardar</button>
+        <button id="cancelar" class="secundario" type="button" hidden>Cancelar</button>
+      </form>
+      <p id="mensaje" role="status" aria-live="polite"></p>
+    </section>
+
+    <section class="panel" aria-labelledby="titulo-inventario">
+      <h2 id="titulo-inventario" tabindex="-1">Existencias de productos</h2>
+      <dl id="resumen-inventario" class="resumen" hidden>
+        <div><dt>Productos registrados</dt><dd id="total-productos">0</dd></div>
+        <div><dt>Unidades en inventario</dt><dd id="total-unidades">0</dd></div>
+      </dl>
+      <p id="estado-listado">Cargando inventario…</p>
+      <table id="tabla" aria-labelledby="titulo-inventario" hidden>
+        <thead>
+          <tr><th scope="col">Producto</th><th scope="col">Unidades</th><th scope="col">Acciones</th></tr>
+        </thead>
+        <tbody id="productos"></tbody>
+      </table>
+    </section>
+  </main>
+  <dialog id="confirmar-eliminacion" class="dialogo" aria-labelledby="titulo-eliminar" aria-describedby="detalle-eliminar">
+    <h2 id="titulo-eliminar">Eliminar producto</h2>
+    <p id="detalle-eliminar"></p>
+    <form method="dialog" class="acciones-dialogo">
+      <button class="secundario" value="cancelar" autofocus>Cancelar</button>
+      <button class="peligro" value="eliminar">Eliminar producto</button>
+    </form>
+  </dialog>
+</body>
+</html>
